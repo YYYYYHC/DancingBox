@@ -143,7 +143,7 @@ python tools/get_bvh.py ./results/results.npy -o results/
 ## Known Limitations
 
 - **Inference speed.** The full pipeline (reconstruction + diffusion sampling)  takes time. I'm considering pushing the performance towards real-time. 
-- **Normalization parameters require hand-tuning.** The `--target_height` and `--y_offset` flags often need manual adjustment per input to get good results. I'm investigating in the root cause (likely the motion generator is over fitting to specific 'facing direction')
+- **Normalization parameters require hand-tuning.** Different rotation influences results. The `--target_height` and `--y_offset` flags often need manual adjustment per input to get good results. I'm investigating in the root cause (likely our training scheme is not optimal)
 
 
 
