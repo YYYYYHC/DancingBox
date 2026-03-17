@@ -1,0 +1,33 @@
+# ===== Results & outputs =====
+results/
+
+# ===== step1_bbox: Model checkpoints =====
+step1_bbox/sam2/checkpoints/*.pt
+step1_bbox/co-tracker/checkpoints/*.pth
+
+# ===== step1_bbox: SAM2 temporary outputs =====
+step1_bbox/sam2/tmp_vis/
+step1_bbox/sam2/tmp_demo/
+step1_bbox/sam2/tmp_vis_video/
+
+# ===== step1_bbox: Upstream demo/example data =====
+step1_bbox/Pi3/examples/
+step1_bbox/co-tracker/assets/
+step1_bbox/co-tracker/notebooks/
+step1_bbox/sam2/notebooks/
+step1_bbox/sam2/sav_dataset/
+
+# ===== step2_motion: Large model =====
+step2_motion/ckpt/
+
+# ===== Build artifacts & caches =====
+__pycache__/
+*.pyc
+*.egg-info/
+build/
+step1_bbox/sam2/sam2/_C.so
+
+# ===== IDE & OS =====
+.vscode/
+.DS_Store
+.claude/
