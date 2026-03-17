@@ -24,25 +24,25 @@ from os.path import join as pjoin
 
 def rotate_x(points: np.ndarray, angle_deg: float) -> np.ndarray:
                 """
-                全局绕 x 轴旋转。
-                
+                Global rotation around the x-axis.
+
                 Parameters
                 ----------
                 points : np.ndarray
-                    形状为 (k, 3) 的点集，每行一个三维坐标 (x, y, z)。
+                    Point set of shape (k, 3), each row is a 3D coordinate (x, y, z).
                 angle_deg : float
-                    旋转角度（度）。
-                
+                    Rotation angle in degrees.
+
                 Returns
                 -------
                 np.ndarray
-                    旋转后的点集，形状仍为 (k, 3)。
+                    Rotated point set, still of shape (k, 3).
                 """
-                
-                theta = np.deg2rad(angle_deg)          # 度 → 弧度
-                c, s   = np.cos(theta), np.sin(theta)   # 余弦、正弦
-                
-                # 绕 x 轴的旋转矩阵
+
+                theta = np.deg2rad(angle_deg)          # degrees to radians
+                c, s   = np.cos(theta), np.sin(theta)   # cosine, sine
+
+                # Rotation matrix around x-axis
                 R = np.array([[1, 0, 0],
                             [0, c,-s],
                             [0, s, c]], dtype=points.dtype)
@@ -51,20 +51,20 @@ def rotate_x(points: np.ndarray, angle_deg: float) -> np.ndarray:
                 return points @ R.T
             
 def rotate_y(points: np.ndarray, angle_deg: float) -> np.ndarray:
-    theta = np.deg2rad(angle_deg)          # 度 → 弧度
-    c, s   = np.cos(theta), np.sin(theta)   # 余弦、正弦
-    
-    # 绕 y 轴的旋转矩阵
+    theta = np.deg2rad(angle_deg)          # degrees to radians
+    c, s   = np.cos(theta), np.sin(theta)   # cosine, sine
+
+    # Rotation matrix around y-axis
     R = np.array([[c, 0, s],
                  [0, 1, 0],
                  [-s, 0, c]], dtype=points.dtype)
     return points @ R.T
 
 def rotate_z(points: np.ndarray, angle_deg: float) -> np.ndarray:
-    theta = np.deg2rad(angle_deg)          # 度 → 弧度
-    c, s   = np.cos(theta), np.sin(theta)   # 余弦、正弦
-    
-    # 绕 z 轴的旋转矩阵
+    theta = np.deg2rad(angle_deg)          # degrees to radians
+    c, s   = np.cos(theta), np.sin(theta)   # cosine, sine
+
+    # Rotation matrix around z-axis
     R = np.array([[c, -s, 0],
                  [s, c, 0],
                  [0, 0, 1]], dtype=points.dtype)

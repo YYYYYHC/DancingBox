@@ -29,11 +29,11 @@ import pickle
 
 def plot_3d_motion_extract_data(save_path, kinematic_tree, joints, title, dataset, figsize=(3, 3), fps=120, radius=3,
                    vis_mode='default', gt_frames=[], hint=None, hintOnly=False, lineOnly=False, points_to_add=None,
-                   export_data_path='motion_data.pkl'):  # 新增参数用于导出数据
+                   export_data_path='motion_data.pkl'):  # additional param for data export
     """
-    修改版函数，在原有可视化基础上增加数据导出功能
+    Modified function that adds data export on top of existing visualization.
     """
-    # ... 原有的matplotlib导入和初始化代码 ...
+    # ... original matplotlib imports and initialization ...
     
     EDGES = [
         (0, 1), (0, 2), (0, 4),
@@ -42,10 +42,10 @@ def plot_3d_motion_extract_data(save_path, kinematic_tree, joints, title, datase
         (6, 2), (6, 4), (6, 7)
     ]
     
-    # 处理数据（与原函数相同）
+    # Process data (same as original function)
     data = joints.copy().reshape(len(joints), -1, 3)
-    
-    # 数据缩放
+
+    # Data scaling
     if dataset == 'kit':
         data *= 0.003
         if hint is not None:
@@ -66,7 +66,7 @@ def plot_3d_motion_extract_data(save_path, kinematic_tree, joints, title, datase
                 k = hint.shape[1]
             hint *= 1.3
     
-    # 高度偏移
+    # Height offset
     MINS = data.min(axis=0).min(axis=0)
     height_offset = MINS[1]
     data[:, :, 1] -= height_offset
@@ -75,36 +75,36 @@ def plot_3d_motion_extract_data(save_path, kinematic_tree, joints, title, datase
     if points_to_add is not None:
         for i in range(len(points_to_add)):
             points_to_add[i][..., 1] -= height_offset
-    
-    # 轨迹处理
+
+    # Trajectory processing
     trajec = data[:, 0, [0, 2]]
     data[..., 0] -= data[:, 0:1, 0]
     data[..., 2] -= data[:, 0:1, 2]
-    
-    # 准备导出数据
+
+    # Prepare export data
     export_data = {
-        'joints': data,  # (frames, 22, 3) - 处理后的关节位置
-        'kinematic_tree': kinematic_tree,  # 骨骼连接信息
-        'hint': hint,  # (frames, n_cubes, 8, 3) - cube角点位置
-        'cube_edges': EDGES,  # cube的边连接信息
-        'trajec': trajec,  # (frames, 2) - 轨迹信息 [x, z]
-        'fps': fps,  # 帧率
-        'frame_count': len(data),  # 总帧数
-        'gt_frames': gt_frames,  # ground truth帧索引
-        'points_to_add': points_to_add,  # 额外的点（如果有）
-        'dataset': dataset,  # 数据集名称
-        'vis_mode': vis_mode  # 可视化模式
+        'joints': data,  # (frames, 22, 3) - processed joint positions
+        'kinematic_tree': kinematic_tree,  # skeleton connection info
+        'hint': hint,  # (frames, n_cubes, 8, 3) - cube corner positions
+        'cube_edges': EDGES,  # cube edge connections
+        'trajec': trajec,  # (frames, 2) - trajectory [x, z]
+        'fps': fps,  # frame rate
+        'frame_count': len(data),  # total frame count
+        'gt_frames': gt_frames,  # ground truth frame indices
+        'points_to_add': points_to_add,  # additional points (if any)
+        'dataset': dataset,  # dataset name
+        'vis_mode': vis_mode  # visualization mode
     }
     
-    # 保存数据到pickle文件
+    # Save data to pickle file
     with open(export_data_path, 'wb') as f:
         pickle.dump(export_data, f)
     print(f"Data exported to {export_data_path}")
     
-    # ... 继续原有的matplotlib可视化代码 ...
-    # （这里放你原来的可视化代码）
-    
-    return export_data  # 返回数据供直接使用
+    # ... continue with original matplotlib visualization code ...
+    # (place original visualization code here)
+
+    return export_data  # return data for direct use
 
 def plot_3d_motion(save_path, kinematic_tree, joints, title, dataset, figsize=(3, 3), fps=120, radius=3,
                    vis_mode='default', gt_frames=[], hint=None, hintOnly=False, lineOnly=False, points_to_add=None):
@@ -356,14 +356,14 @@ def plot_3d_motion_with_cubes(save_path, kinematic_tree, joints, cubes, title, f
                       color='blue')
         #             ax = plot_xzPlane(ax, MINS[0], MAXS[0], 0, MINS[2], MAXS[2])
         for cube in cubes[index]:
-            # 定义立方体的顶点连接顺序
+            # Define cube vertex connectivity
             edges = [
-                (0, 1), (1, 3), (3, 2), (2, 0),  # 底面
-                (4, 5), (5, 7), (7, 6), (6, 4),  # 顶面
-                (0, 4), (1, 5), (2, 6), (3, 7)   # 连接底面和顶面的边
+                (0, 1), (1, 3), (3, 2), (2, 0),  # bottom face
+                (4, 5), (5, 7), (7, 6), (6, 4),  # top face
+                (0, 4), (1, 5), (2, 6), (3, 7)   # edges connecting bottom and top
             ]
-            
-            # 绘制立方体的每条边
+
+            # Draw each edge of the cube
             for edge in edges:
                 ax.plot3D([cube[edge[0]][0]-trajec[index, 0], cube[edge[1]][0]-trajec[index, 0]],
                           [cube[edge[0]][1], cube[edge[1]][1]],

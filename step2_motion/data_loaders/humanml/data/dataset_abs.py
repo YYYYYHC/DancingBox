@@ -341,10 +341,10 @@ class Text2MotionDatasetV2(data.Dataset):
         if frame_start is not None and frame_end is not None:
             abstraction_full = abstraction_full[int(frame_start):int(frame_end)]
         abstraction = abstraction_full[idx:idx+m_length]
-        # 将abstraction转换为float32类型
+        # Convert abstraction to float32
         abstraction = abstraction.astype(np.float32)
-        # 重新整形为(t, k* 8 * 3)
-        # 在k维度上随机打乱
+        # Reshape to (t, k * 8 * 3)
+        # Randomly shuffle along the k dimension
         if not self.valtest:
             k = abstraction.shape[1]
             shuffle_idx = np.random.permutation(k)

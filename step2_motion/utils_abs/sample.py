@@ -56,7 +56,7 @@ def sample_all_abstraction(abstraction_dict, center_mode=-1, max_num1=None, max_
     assert center_mode in [1, 2, 3, 4, 5]
     all_cube_branches = abstraction_dict[f"center_mode_{center_mode:02d}"]['all_cube_branches']
     all_branches_idxs = abstraction_dict[f"center_mode_{center_mode:02d}"]['all_cube_branches_idxs']
-    # 随机选择max_num个中心索引
+    # randomly select up to max_num center indices
     all_final_cubes = []
     all_final_idxs = []
     center_indices = list(range(len(all_cube_branches)))
@@ -97,8 +97,8 @@ def apply_random_transformation_full(data, rotation_strength=np.pi, translation_
                                     protion_time = 0.2, num_cube = 1):
     '''
     data: (t, n, 8, 3)
-    protion_time: 随机选择x%的时间点
-    num_cube: 随机选择x个cube
+    protion_time: randomly select x% of time steps
+    num_cube: randomly select x cubes
     '''
     t, n, _, _ = data.shape
     time_indices = np.array(np.random.choice(t, size=int(t*protion_time), replace=False))
@@ -116,38 +116,39 @@ def apply_random_global_scaling_translation(data, scaling_strength=1.0, translat
 
 def apply_random_transformation_single(data, rotation_strength=np.pi, translation_strength=1.0):
     """
-    对形状为 (n, 8, 3) 的物体组，以各自中心为旋转点施加随机旋转与平移。
+    Apply random rotation and translation to a group of objects of shape (n, 8, 3),
+    rotating each around its own center.
 
-    参数:
+    Args:
         data: np.ndarray, shape = (n, 8, 3)
-        rotation_strength: float, 最大旋转角度（弧度）
-        translation_strength: float, 最大平移范围
+        rotation_strength: float, max rotation angle (radians)
+        translation_strength: float, max translation range
 
-    返回:
+    Returns:
         transformed: np.ndarray, shape = (n, 8, 3)
     """
     n = data.shape[0]
 
-    # Step 1: 计算每个物体的中心
+    # Step 1: compute center of each object
     centers = np.mean(data, axis=1, keepdims=True)  # (n, 1, 3)
 
-    # Step 2: 居中
+    # Step 2: center the data
     centered_data = data - centers  # (n, 8, 3)
 
-    # Step 3: 生成旋转矩阵
+    # Step 3: generate rotation matrices
     axes = np.random.randn(n, 3)
     axes /= np.linalg.norm(axes, axis=1, keepdims=True) + 1e-8
     angles = np.random.uniform(-rotation_strength, rotation_strength, size=(n,))
     rotvecs = axes * angles[:, None]
     rot_mats = R.from_rotvec(rotvecs).as_matrix()  # (n, 3, 3)
 
-    # Step 4: 应用旋转
+    # Step 4: apply rotation
     rotated = np.einsum('nij,nkj->nki', rot_mats, centered_data)  # (n, 8, 3)
 
-    # Step 5: 加回中心
+    # Step 5: re-center
     recentered = rotated + centers  # (n, 8, 3)
 
-    # Step 6: 添加随机平移
+    # Step 6: add random translation
     translations = np.random.uniform(-translation_strength, translation_strength, size=(n, 1, 3))
     transformed = recentered + translations  # (n, 8, 3)
 
@@ -155,13 +156,13 @@ def apply_random_transformation_single(data, rotation_strength=np.pi, translatio
 
 def apply_random_drop(cubes, idxs):
     k = cubes.shape[0]
-    # 随机选择要删除的数量，范围为 [1, k//2]
+    # randomly choose how many to drop, range [1, k//2]
     drop_num = np.random.randint(1, k // 2 + 1) if k > 1 else 0
-    
-    # 在 [0, k-1] 中随机选择 drop_num 个索引
+
+    # randomly select drop_num indices from [0, k-1]
     drop_indices = np.random.choice(k, size=drop_num, replace=False)
-    
-    # 生成保留的索引
+
+    # compute indices to keep
     keep_indices = np.array([i for i in range(k) if i not in drop_indices])
     
     cubes_kept = cubes[keep_indices]
@@ -172,16 +173,16 @@ def apply_random_drop(cubes, idxs):
 def apply_random_drop_full(data):
     '''
     data: (t, n, 8, 3)
-    随机
+    Randomly drop some cubes.
     '''
     k = data.shape[1]
-    # 随机选择要删除的数量，范围为 [1, k//6], 对于少于或等于6个cube的，不删除
+    # randomly choose how many to drop, range [1, k//2]; skip if <= 2 cubes
     drop_num = np.random.randint(1, k // 2 + 1) if k > 2 else 0
-    
-    # 在 [0, k-1] 中随机选择 drop_num 个索引
+
+    # randomly select drop_num indices from [0, k-1]
     drop_indices = np.random.choice(k, size=drop_num, replace=False)
-    
-    # 生成保留的索引
+
+    # compute indices to keep
     keep_indices = np.array([i for i in range(k) if i not in drop_indices])
     
     data_kept = data[:, keep_indices]

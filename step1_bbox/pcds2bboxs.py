@@ -67,12 +67,12 @@ class BoundingBox:
 def remove_outliers_mahalanobis(X, p=0.99, max_iter=5):
     """
     X: (N, 3)
-    p: 置信水平；常用 0.99（阈值≈11.345），越大越宽松
-    max_iter: 迭代次数上限
-    返回: X_inliers, mask, d2
+    p: confidence level; commonly 0.99 (threshold ~11.345), larger = more lenient
+    max_iter: maximum number of iterations
+    Returns: X_inliers, mask, d2
     """
     X = np.asarray(X)
-    # 常用自由度=3 的卡方分布阈值表（避免依赖 scipy）
+    # Chi-squared threshold table for df=3 (avoids scipy dependency)
     chi2_thresh_table = {0.95: 7.815, 0.975: 9.348, 0.99: 11.345, 0.997: 14.160}
     thr = chi2_thresh_table.get(p, 11.345)
 
@@ -80,11 +80,11 @@ def remove_outliers_mahalanobis(X, p=0.99, max_iter=5):
     for _ in range(max_iter):
         Xc = X[mask]
         mu = Xc.mean(axis=0)
-        # rowvar=False -> 按列为变量；pinvh 更稳健
+        # rowvar=False -> columns are variables; pinvh is more robust
         S = np.cov(Xc, rowvar=False)
-        Sinv = np.linalg.pinv(S)  # 可能退化，用 pinv/pinvh 更稳
+        Sinv = np.linalg.pinv(S)  # may be degenerate, pinv/pinvh is more stable
         d = X - mu
-        d2 = np.einsum('ij,jk,ik->i', d, Sinv, d)  # 马氏距离平方
+        d2 = np.einsum('ij,jk,ik->i', d, Sinv, d)  # squared Mahalanobis distance
         new_mask = d2 < thr
         if new_mask.sum() == mask.sum():
             mask = new_mask
@@ -97,40 +97,40 @@ def remove_outliers_mahalanobis(X, p=0.99, max_iter=5):
 def interpolate_se3_geodesic(T_target, n_frames):
     T_start = np.eye(4)
     
-    # 计算目标变换的 log（相对变换）
+    # Compute the log of the target transform (relative transform)
     T_rel = np.dot(np.linalg.inv(T_start), T_target)
     log_T = logm(T_rel)
 
     transforms = []
     for alpha in np.linspace(0, 1, n_frames):
-        # 对log矩阵插值，然后指数映射回来
+        # Interpolate in log space, then map back via matrix exponential
         T_interp = np.dot(T_start, expm(alpha * log_T))
-        transforms.append(T_interp.real)  # 去掉虚数部分（数值误差）
+        transforms.append(T_interp.real)  # discard imaginary part (numerical error)
     
     return transforms
 # -----------------------------------------------------------------------------
 # Geometry utils — *new*: interpolate transform
 # -----------------------------------------------------------------------------
 def interpolate_transform(T_target, n_frames=10):
-    # 分解旋转和平移
+    # Decompose into rotation and translation
     R_target = T_target[:3, :3]
     t_target = T_target[:3, 3]
 
-    # 单位变换
+    # Identity transform
     R_start = np.eye(3)
     t_start = np.zeros(3)
 
-    # 使用 Rotation 对象和 Slerp 插值旋转
+    # Interpolate rotation using Rotation objects and Slerp
     rot_start = Rotation.from_matrix(R_start)
     rot_end = Rotation.from_matrix(R_target)
     slerp = Slerp([0, 1], Rotation.concatenate([rot_start, rot_end]))
     times = np.linspace(0, 1, n_frames)
     rot_interp = slerp(times)
 
-    # 插值平移
+    # Interpolate translation
     t_interp = np.linspace(t_start, t_target, n_frames)
 
-    # 拼回 4x4 仿射矩阵序列
+    # Assemble back into a sequence of 4x4 affine matrices
     transforms = []
     for R, t in zip(rot_interp.as_matrix(), t_interp):
         T = np.eye(4)
@@ -146,29 +146,29 @@ def interpolate_transform(T_target, n_frames=10):
 # -----------------------------------------------------------------------------
 
 def estimate_rotation_to_align_normal_with_y(calibration_points):
-    # 拟合平面 z = ax + by + c
+    # Fit plane z = ax + by + c
     A = np.c_[calibration_points[:, 0], calibration_points[:, 1], np.ones(len(calibration_points))]
     b = calibration_points[:, 2]
     coeffs, *_ = np.linalg.lstsq(A, b, rcond=None)
     a, b_coef, _ = coeffs
 
-    # 平面法向量 (-a, -b, 1)
+    # Plane normal vector (-a, -b, 1)
     normal = np.array([-a, -b_coef, 1.0])
     normal = normal / np.linalg.norm(normal)
 
-    # 目标方向为 y 轴正方向
+    # Target direction: positive y-axis
     target = np.array([0.0, 1.0, 0.0])
 
-    # 计算旋转轴（叉积）和角度（点积）
+    # Compute rotation axis (cross product) and angle (dot product)
     axis = np.cross(normal, target)
     axis_norm = np.linalg.norm(axis)
     if axis_norm < 1e-8:
-        return np.eye(3)  # 已经对齐，无需旋转
+        return np.eye(3)  # already aligned, no rotation needed
 
     axis = axis / axis_norm
     angle = np.arccos(np.clip(np.dot(normal, target), -1.0, 1.0))
 
-    # 罗德里格斯公式构造旋转矩阵
+    # Rodrigues' formula to construct rotation matrix
     K = np.array([
         [0, -axis[2], axis[1]],
         [axis[2], 0, -axis[0]],
@@ -176,33 +176,33 @@ def estimate_rotation_to_align_normal_with_y(calibration_points):
     ])
     R = np.eye(3) + np.sin(angle) * K + (1 - np.cos(angle)) * (K @ K)
     
-    return R  # 3x3 旋转矩阵
+    return R  # 3x3 rotation matrix
 
 # -----------------------------------------------------------------------------
 # Geometry utils — *new*: estimate x rotation to flatten the plane
 # -----------------------------------------------------------------------------
 def estimate_x_rotation_to_flatten(calibration_points):
-    # 构造矩阵 A 和向量 b，使得 z = ax + by + c
+    # Build matrix A and vector b such that z = ax + by + c
     A = np.c_[calibration_points[:, 0], calibration_points[:, 1], np.ones(len(calibration_points))]
     b = calibration_points[:, 2]
-    
-    # 最小二乘拟合平面系数
+
+    # Least-squares fit of plane coefficients
     coeffs, *_ = np.linalg.lstsq(A, b, rcond=None)
     a, b_coef, c = coeffs
-    
-    # 法向量 (平面 Ax + By + Cz + D = 0 对应法向量为 (-a, -b, 1))
+
+    # Normal vector (plane Ax + By + Cz + D = 0 has normal (-a, -b, 1))
     normal = np.array([-a, -b_coef, 1.0])
     normal = normal / np.linalg.norm(normal)
-    
-    # 提取绕x轴的角度（注意是normal在yz平面上的角度）
+
+    # Extract rotation angle around x-axis (angle of normal in the yz-plane)
     ny, nz = normal[1], normal[2]
     theta_rad = np.arctan2(ny, nz)
     theta_deg = np.degrees(theta_rad)
-    
-    # 提取旋转矩阵使得法向量与y轴平行
-    
-    
-    return theta_deg  # 正数代表需要绕x轴顺时针旋转theta度
+
+    # Extract rotation matrix to align normal with y-axis
+
+
+    return theta_deg  # positive means clockwise rotation around x-axis by theta degrees
 # -----------------------------------------------------------------------------
 # I/O helpers (npy / ply)
 # -----------------------------------------------------------------------------
@@ -235,41 +235,41 @@ from scipy import ndimage
 
 def keep_largest_voxel_connected_cluster(cloud, voxel_size=0.01):
     """
-    只保留点云中占据最大连通 voxel 区域的点。
-    
+    Keep only points belonging to the largest connected voxel region.
+
     Parameters
     ----------
     cloud : (N, 3) or (N, 4) ndarray
-        输入点云（xyz 或 xyz+附加属性），单位为米。
+        Input point cloud (xyz or xyz+attributes), in meters.
     voxel_size : float
-        体素大小（如0.01表示1cm）。
+        Voxel size (e.g. 0.01 = 1 cm).
 
     Returns
     -------
     filtered_cloud : ndarray
-        保留最大连通簇的点（保持原 shape，如原为(N,4)则输出也是(N_filtered,4)）。
+        Points from the largest connected cluster (preserves original columns).
     """
     pts = cloud[:, :3]
 
-    # 1. 将空间映射到 voxel grid
+    # 1. Map spatial coordinates to voxel grid
     min_bound = pts.min(axis=0)
     voxel_indices = np.floor((pts - min_bound) / voxel_size).astype(int)
 
-    # 2. 构建体素网格（稀疏 -> 稠密映射）
+    # 2. Build dense voxel grid from sparse points
     max_idx = voxel_indices.max(axis=0) + 1
     grid = np.zeros(shape=tuple(max_idx), dtype=bool)
     grid[tuple(voxel_indices.T)] = True  # occupied voxel = True
 
-    # 3. 连通区域标记（使用 26 连通性）
+    # 3. Label connected components (26-connectivity)
     labeled, num_features = ndimage.label(grid, structure=np.ones((3,3,3)))
 
-    # 4. 给每个点分配其所属 cluster id
+    # 4. Assign each point its cluster label
     point_labels = labeled[tuple(voxel_indices.T)]
 
-    # 5. 找到最大连通区域（最多点的 label）
+    # 5. Find the largest connected component (label with most points)
     largest_label = np.bincount(point_labels).argmax()
 
-    # 6. 仅保留属于最大簇的点
+    # 6. Keep only points belonging to the largest cluster
     keep_mask = point_labels == largest_label
     return cloud[keep_mask]
 
@@ -384,53 +384,53 @@ def estimate_transform_from_tracks(obj_id: int,
     tgt_points = tgt_points[mask_all]
     
     k = src_points.shape[0]
-    # 1️⃣ 去中心化
+    # 1. Center the point sets
     mu_src = src_points.mean(axis=0)
     mu_tgt = tgt_points.mean(axis=0)
     src_centered = src_points - mu_src
     tgt_centered = tgt_points - mu_tgt
 
-    # 2️⃣ 求协方差矩阵
+    # 2. Compute cross-covariance matrix
     H = src_centered.T @ tgt_centered / k   # (3,3)
 
-    # 3️⃣ SVD
+    # 3. SVD
     U, S, Vt = np.linalg.svd(H)
     R = Vt.T @ U.T
 
-    # 若出现反射且不允许，修正符号
+    # Correct reflection if determinant is negative
     if np.linalg.det(R) < 0:
         Vt[2, :] *= -1
         R = Vt.T @ U.T
 
 
-    # 5️⃣ 平移
+    # 5. Translation
     t = mu_tgt - R @ mu_src
 
-    # 6️⃣ 组装齐次矩阵
+    # 6. Assemble homogeneous matrix
     T = np.eye(4)
     T[:3, :3] = R
     T[:3, 3] = t
     return T
-    # # 创建两个Open3D点云对象
+    # # Create two Open3D point cloud objects
     # src_pcd = o3d.geometry.PointCloud()
     # tgt_pcd = o3d.geometry.PointCloud()
-    
-    # # 设置点云坐标
+
+    # # Set point cloud coordinates
     # src_pcd.points = o3d.utility.Vector3dVector(src_points)
     # tgt_pcd.points = o3d.utility.Vector3dVector(tgt_points)
-    
-    # # 为每个点赋予颜色
+
+    # # Assign a color to each point
     # src_colors = np.zeros((len(src_points), 3))
     # tgt_colors = np.zeros((len(tgt_points), 3))
     # for i in range(len(src_points)):
     #     color = np.random.rand(3)
     #     src_colors[i] = color
     #     tgt_colors[i] = color
-        
+
     # src_pcd.colors = o3d.utility.Vector3dVector(src_colors)
     # tgt_pcd.colors = o3d.utility.Vector3dVector(tgt_colors)
-    
-    # # 保存点云
+
+    # # Save point clouds
     # o3d.io.write_point_cloud(f"src_frame_{src_frame}.ply", src_pcd)
     # o3d.io.write_point_cloud(f"tgt_frame_{tgt_frame}.ply", tgt_pcd)
     
@@ -669,7 +669,7 @@ def main():
     parts_Ts = {pid: bboxs_Ts[pid][1] for pid in part_ids}
     
     # simple colour table
-    palette = plt.cm.rainbow(np.linspace(0, 1, len(part_ids)))[:, :3]  # 使用matplotlib的彩虹色谱生成不同颜色
+    palette = plt.cm.rainbow(np.linspace(0, 1, len(part_ids)))[:, :3]  # generate distinct colors using matplotlib rainbow colormap
     colours = {pid: palette[i % len(palette)] for i, pid in enumerate(part_ids)}
 
     print("[INFO] rendering …")

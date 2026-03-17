@@ -64,13 +64,13 @@ def collate(batch):
     
     if 'hint' in notnone_batches[0] and notnone_batches[0]['hint'] is not None:
         hint = [b['hint'] for b in notnone_batches]
-        # 找到最大的k值
+        # Find the maximum k value
         max_k = notnone_batches[0]['max_abs_num']
-        # 对每个hint进行padding
+        # Pad each hint
         padded_hint = []
         for h in hint:
             t, k = h.shape
-            pad_width = ((0, 0), (0, max_k*3*8 - k))  # 在k维度上padding
+            pad_width = ((0, 0), (0, max_k*3*8 - k))  # pad along the k dimension
             padded = numpy.pad(h, pad_width, mode='constant', constant_values=0)
             padded_hint.append(padded)
         cond['y'].update({'hint': torch.as_tensor(numpy.array(padded_hint))})

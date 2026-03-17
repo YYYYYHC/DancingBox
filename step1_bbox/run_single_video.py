@@ -6,7 +6,7 @@ import json
 def check_files(video_paths):
     for v in video_paths:
         if not os.path.exists(v):
-            print(f"文件不存在: {v}")
+            print(f"File not found: {v}")
             return False
     return True
 video_name="008593amraiseArm"
@@ -22,9 +22,9 @@ save_vis=True
 video=f"myvideos/{video_name}.mp4"
 
 if not check_files([video]):
-    print("文件检查失败")
+    print("File check failed")
     exit(1)
-print("文件检查通过")
+print("File check passed")
 working_dir=f"../results/working_dir_{testid}"
 
 times = {"pi3": 0, "sam2": 0, "cotracker": 0, "pcb2bbox": 0}
@@ -46,9 +46,9 @@ if run_sam2 and run_labeling:
 for w in [working_dir]:
     clicks_path = os.path.join(w, "clicks.json")
     if not os.path.exists(clicks_path):
-        print(f"clicks.json 不存在: {clicks_path}")
+        print(f"clicks.json not found: {clicks_path}")
         exit(1)
-print("clicks 检查通过")
+print("clicks check passed")
     # 2.2 segmentation
 if run_sam2 and run_segmentation:
     print("running sam2")
@@ -65,9 +65,9 @@ if run_cotracker:
 for w in [working_dir]:
     video_path = os.path.join(w, "vis_tracks/video.mp4")
     if not os.path.exists(video_path):
-        print(f"video.mp4 不存在: {video_path}")
+        print(f"video.mp4 not found: {video_path}")
         exit(1)
-print("video.mp4 检查通过")
+print("video.mp4 check passed")
 
 # step4: run pcb2bbox
 if run_pcb2bbox:
