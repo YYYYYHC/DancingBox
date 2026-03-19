@@ -1,6 +1,6 @@
 # DancingBox: A Lightweight MoCap System for Character Animation from Physical Proxies
 
-**CHI 2026 | Honorable Mention Award**
+**CHI 2026 | Honorable Mention Award** | [Project Page](https://yyyyyhc.github.io/DancingBox-project-page/)
 
 DancingBox captures motion from everyday physical objects (boxes, cups, etc.) using a single RGB camera (your phone, for example) and generates full-body character animation — no markers, suits, or depth sensors required.
 
@@ -157,6 +157,12 @@ ToBeAdded
 
 ## Training Data and Scripts
 
-Coming soon :)
+Coming soon :
 
 Contact me if you are ok with a messy version.
+
+## License
+
+This project is licensed under the 
+
+[Creative Commons Attribution-NonCommercial-NoDerivatives 4.0 International License](LICENSE).
